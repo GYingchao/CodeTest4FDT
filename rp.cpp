@@ -3,6 +3,7 @@
 #include<string>
 #include<sstream>
 #include<vector>
+#include <map>
 
 using namespace std;
 
@@ -203,11 +204,16 @@ void trader::updatePositions(tradeEntry newOrder, double fee)
 		}
 	}
 }
+double trader::getProfit()
+{
+	return realizedProfit;
+}
 
+/*	=====================================	test case	======================================	*/
 int main()
 {
-	vector<string> data;
 	//	Get access to the input .tsv file
+	vector<string> data;
 	string filePath = "../in1.tsv";
 	readTSV(filePath, data);
 	/*	Just for testing
@@ -217,6 +223,7 @@ int main()
 	}
 	*/
 	
+	//	parse data
 	int size = data.size();
 	//vector<int> orderId(size - 1, 0);
 	vector<string> traderID(size - 1, "");
@@ -226,16 +233,38 @@ int main()
 	vector<string> tradeType(size -1 , "");
 	vector<double> fee(size -1 , 0.0); 
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
-	
-	///*	Just for testing
+	/*	Just for testing
 	cout << "After parsing:  " << endl;
 	for(int i=0; i<size-1; i++) {
 		cout << traderID.at(i) << "\t" << stockCode.at(i) << "\t" << quantity.at(i) << "\t" << price.at(i) << "\t" << tradeType.at(i) << "\t" << fee.at(i) << endl;
 	}
-	//*/
+	*/
 	
+	//	proceed the algorithm
+	map<string, trader*> book;
+	map<string, trader*>::iterator it;
+
+	for(int i=0; i<size-1; i++)
+	{
+		string tid = traderID.at(i);
+		it = book.find(tid);
+		if(it != book.end())	//	exsiting
+		{
+			trader* e = it->second;
+			e->updatePositions(tradeEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i) ), fee.at(i) );
+		}
+		else {
+			//	insert a new trader if not exsiting
+			trader* n = new trader(tid);
+			book.insert(pair<string, trader*>(tid, n) );
+		}
+	}
+	
+	for(map<string, trader*>::iterator p = book.begin(); p != book.end(); ++p)
+	{
+		cout << p->first << "\t" << (p->second)->getProfit() << endl;
+	}
 	return 0;
-	
 }
 	
 
