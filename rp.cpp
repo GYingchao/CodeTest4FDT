@@ -7,38 +7,6 @@
 
 using namespace std;
 
-int readTSV(string filePath, vector<string> &data) 
-{
-	ifstream fileReader(filePath);
-	if (!fileReader) 
-	{
-		cerr << "unable to load file " << filePath << endl;
-		return -1;
-		
-	}
-	else {	
-		string line;
-		while(getline(fileReader, line))
-		{
-			data.push_back(line);
-		}
-	}
-	fileReader.close();
-	return 0;
-}
-
-void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, vector<int> &qu, vector<double> &pr, vector<string> &trT, vector<double> &fe)
-{
-	//	Handle tab separated string line by line
-	int temp;
-	for(int i=0; i<data.size()-1; i++)
-	{
-		istringstream parser(data.at(i + 1));
-		parser >> temp >> tr.at(i) >> st.at(i) >> qu.at(i) >> pr.at(i) >> trT.at(i) >> fe.at(i);
-	}
-	return; 
-}
-
 //	Trade Type definition
 enum TradeType
 {
@@ -161,12 +129,14 @@ void trader::updatePositions(tradeEntry newOrder, double fee)
 	else {
 		string stockCode = newOrder.getStockCode();
 		TradeType type = newOrder.getType();
+		bool found =false; 
 		for(int i=0; i<positions.size(); i++)
 		{
 			// Search for buy/sell pair
 			if( (positions.at(i) ).getStockCode() == stockCode && ( (positions.at(i) ).getType() * type) == -1)
 			{
 				//	buy/sell pair needs to be realized, should be CAREFULLY handled here
+				found == true;
 				int resQ = (positions.at(i) ).getQuantity() - newOrder.getQuantity();
 				if(resQ > 0)
 				{
@@ -189,17 +159,18 @@ void trader::updatePositions(tradeEntry newOrder, double fee)
 					break;
 				}
 			}
-			else {
-				//	No pair found, just append
-				positions.push_back(newOrder);
-			}
 		}
-		//	Update positions in case some entry is realized
-		 for(vector<tradeEntry>::iterator it = positions.begin() ; it != positions.end(); ++it)
+		if(found == false) 
 		{
-			if( (*it).isRealized() )
+			positions.push_back(newOrder);
+		} else {
+			//	Update positions in case some entry is realized
+			 for(vector<tradeEntry>::iterator it = positions.begin() ; it != positions.end(); ++it)
 			{
-				positions.erase(it);
+				if( (*it).isRealized() )
+				{
+					positions.erase(it);
+				}
 			}
 		}
 	}
@@ -207,6 +178,50 @@ void trader::updatePositions(tradeEntry newOrder, double fee)
 double trader::getProfit()
 {
 	return realizedProfit;
+}
+
+int readTSV(string filePath, vector<string> &data) 
+{
+	ifstream fileReader(filePath);
+	if (!fileReader) 
+	{
+		cerr << "unable to load file " << filePath << endl;
+		return -1;
+		
+	}
+	else {	
+		string line;
+		while(getline(fileReader, line))
+		{
+			data.push_back(line);
+		}
+	}
+	fileReader.close();
+	return 0;
+}
+
+/*	=============================	Utilities for IO	=====================================	*/
+
+void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, vector<int> &qu, vector<double> &pr, vector<string> &trT, vector<double> &fe)
+{
+	//	Handle tab separated string line by line
+	int temp;
+	for(int i=0; i<data.size()-1; i++)
+	{
+		istringstream parser(data.at(i + 1));
+		parser >> temp >> tr.at(i) >> st.at(i) >> qu.at(i) >> pr.at(i) >> trT.at(i) >> fe.at(i);
+	}
+	return; 
+}
+
+void write2TSV(map<string, trader*> &result, string outPath)
+{
+	ofstream fileWriter(outPath);
+	for(map<string, trader*>::iterator p = result.begin(); p != result.end(); ++p)
+	{
+		fileWriter << p->first << "\t" << (p->second)->getProfit() << endl;
+	}
+	fileWriter.close();
 }
 
 /*	=====================================	test case	======================================	*/
@@ -243,7 +258,6 @@ int main()
 	//	proceed the algorithm
 	map<string, trader*> book;
 	map<string, trader*>::iterator it;
-
 	for(int i=0; i<size-1; i++)
 	{
 		string tid = traderID.at(i);
@@ -256,14 +270,21 @@ int main()
 		else {
 			//	insert a new trader if not exsiting
 			trader* n = new trader(tid);
+			n->updatePositions(tradeEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i) ), fee.at(i) );
 			book.insert(pair<string, trader*>(tid, n) );
 		}
 	}
-	
+	/*	test output
 	for(map<string, trader*>::iterator p = book.begin(); p != book.end(); ++p)
 	{
 		cout << p->first << "\t" << (p->second)->getProfit() << endl;
 	}
+	*/
+	
+	//	output to file
+	string outPath = "../out1.tsv";
+	write2TSV(book, outPath);
+	
 	return 0;
 }
 	
