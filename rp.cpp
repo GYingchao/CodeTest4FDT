@@ -70,7 +70,7 @@ tradeEntry::tradeEntry(string st, int qu, double pr, string tt)
 		tradeType = SELL;
 	}
 	else {
-		cerr << "Error ocurred in instancing tradeEntry£ºCannot decide trade type!" << endl;
+		cerr << "Error ocurred in instancing tradeEntry ! Cannot decide trade type ! " << endl;
 		return;
 	}
 	//fee = fe;
