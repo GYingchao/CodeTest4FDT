@@ -5,6 +5,7 @@
 #include<vector>
 #include<map>
 #include<algorithm>
+#include "rp.h"
 
 using namespace std;
 
@@ -179,12 +180,12 @@ double trader::getProfit()
 /*	=============================	Utilities functions =====================================	*/
 int readTSV(string filePath, vector<string> &data)
 {
+    uint64_t tick1 = GetTimeMs64();
 	ifstream fileReader(filePath);
 	if (!fileReader)
 	{
 		cerr << "unable to load file " << filePath << endl;
 		return -1;
-
 	}
 	else {
 		string line;
@@ -194,10 +195,12 @@ int readTSV(string filePath, vector<string> &data)
 		}
 	}
 	fileReader.close();
+	cout << "========== readTSV in "<< filePath << " costs " << GetTimeMs64() - tick1 << " ms.  ==========" << endl;
 	return 0;
 }
 void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, vector<int> &qu, vector<double> &pr, vector<string> &trT, vector<double> &fe)
 {
+    uint64_t tick1 = GetTimeMs64();
 	//	Handle tab separated string line by line
 	int temp;
 	for(int i=0; i<data.size()-1; i++)
@@ -205,10 +208,12 @@ void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, 
 		istringstream parser(data.at(i + 1));
 		parser >> temp >> tr.at(i) >> st.at(i) >> qu.at(i) >> pr.at(i) >> trT.at(i) >> fe.at(i);
 	}
+	cout << "========== parseTSVLine costs " << GetTimeMs64() - tick1 << " ms.  ==========" << endl;
 	return;
 }
 void write2TSV(vector<pair<double, string> > &result, string outPath)
 {
+    uint64_t tick1 = GetTimeMs64();
 	ofstream fileWriter(outPath);
 	int len = result.size() - 1;
 	for(int p=0; p<len; p++)
@@ -217,6 +222,8 @@ void write2TSV(vector<pair<double, string> > &result, string outPath)
 	}
 	fileWriter << (result.at(len) ).second << "\t" << (result.at(len) ).first;
 	fileWriter.close();
+	cout << "========== write2TSV costs " << GetTimeMs64() - tick1 << " ms. ==========" << endl;
+	return;
 }
 
 /*	=====================================	test case	======================================	*/
@@ -224,9 +231,10 @@ int main()
 {
 	//	Get access to the input .tsv file
 	vector<string> data;
-	string filePath = "../in1.tsv";
+	string filePath = "../input/in1.tsv";
 	readTSV(filePath, data);
 
+	uint64_t tick1 = GetTimeMs64();
 	//	parse data
 	int size = data.size();
 	vector<string> traderID(size - 1, "");
@@ -235,6 +243,7 @@ int main()
 	vector<double> price(size -1 , 0.0);
 	vector<string> tradeType(size -1 , "");
 	vector<double> fee(size -1 , 0.0);
+	cout << "========== allocate vectors costs " << GetTimeMs64() - tick1 << " ms.    ==========" << endl;
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
 
 	//	proceed the algorithm
@@ -266,9 +275,10 @@ int main()
         f++;
     }
     sort(formatter.rbegin(), formatter.rend()); //  Sort the pair by the first value DESC
+    cout << "========== main algorithm costs " << GetTimeMs64() - tick1 << " ms.    ==========" << endl;
 
 	//	output to file
-	string outPath = "../out1.tsv";
+	string outPath = "../output/out1.tsv";
 	write2TSV(formatter, outPath);
 	return 0;
 }
