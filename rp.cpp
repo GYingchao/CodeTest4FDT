@@ -30,7 +30,6 @@ class tradeEntry
 
 	public:
 		tradeEntry(string st, int qu, double pr, string tt);
-		//~tradeEntry();
 		string getStockCode();
 		int getQuantity();
 		void setQuantity(int v);
@@ -52,7 +51,7 @@ class trader
 	public:
 		trader(string ID);
 		//~trader();
-		void updatePositions(tradeEntry newOrder, double fee);
+		void updatePositions(tradeEntry& newOrder, double fee);
 		double getProfit();
 };
 
@@ -115,43 +114,43 @@ trader::trader(string ID)
 	}
 	realizedProfit = 0.0;
 }
-void trader::updatePositions(tradeEntry newOrder, double fee)
+void trader::updatePositions(tradeEntry& newOrder, double fee)
 {
 	realizedProfit -= fee;
-	if(positions.empty())
+	if(positions.empty())   //  Holding no stock
 	{
 		positions.push_back(newOrder);
 	}
-	else {
+	else {  //  Find whether there is a same stock with different tradeType on hold
 		string stockCode = newOrder.getStockCode();
 		TradeType type = newOrder.getType();
-		bool found =false;
+		bool found = false;
 		for(int i=0; i<positions.size(); i++)
 		{
-			// Search for buy/sell pair
-			if( (positions.at(i) ).getStockCode() == stockCode && ( (positions.at(i) ).getType() * type) == -1)
+			if( (positions.at(i) ).getStockCode() == stockCode && ( (positions.at(i) ).getType() * type) == -1) // Search for buy/sell pair
 			{
-				//	buy/sell pair needs to be realized, should be CAREFULLY handled here
-				found == true;
-				int resQ = (positions.at(i) ).getQuantity() - newOrder.getQuantity();
+				//	buy/sell pair exists, needs to be realized
+				found = true;
+				int resQ = (positions.at(i) ).getQuantity() - newOrder.getQuantity();   //  Handle quantity
 				if(resQ > 0)
 				{
 					//	newOrder is wholly realized by entry i
 					(positions.at(i) ).setQuantity(resQ);
 					realizedProfit += newOrder.getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
+					newOrder.setRealized(true);
 					break;	//	No more need to search
 
 				} else if(resQ < 0) {
 					//	entry i is wholly realized by newOrder
-					newOrder.setQuantity(resQ);
+					newOrder.setQuantity(-resQ);
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
 					(positions.at(i) ).setRealized(true);
-					continue;
-
+					//  Search more to realize the rest newOrder
 				} else {
-					// Just equal and balanced
+					//  Just equal and balanced
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
-					(positions.at(i) ).setRealized(true);
+ 					(positions.at(i) ).setRealized(true);
+					newOrder.setRealized(true);
 					break;
 				}
 			}
@@ -160,13 +159,17 @@ void trader::updatePositions(tradeEntry newOrder, double fee)
 		{
 			positions.push_back(newOrder);
 		} else {
-			//	Update positions in case some entry is realized
-			 for(vector<tradeEntry>::iterator it = positions.begin() ; it != positions.end(); ++it)
+			//	Update positions for some entry is realized
+			 for(int i=0; i<positions.size(); i++)
 			{
-				if( (*it).isRealized() )
+				if( positions.at(i).isRealized() )
 				{
-					positions.erase(it);
+					positions.erase(positions.begin() + i);
 				}
+			}
+			if(!newOrder.isRealized() )
+			{
+			    positions.push_back(newOrder);
 			}
 		}
 	}
@@ -180,11 +183,10 @@ double trader::getProfit()
 int readTSV(string filePath, vector<string> &data)
 {
 	ifstream fileReader(filePath);
-	if (!fileReader)
+	if (!fileReader.is_open())
 	{
-		cerr << "unable to load file " << filePath << endl;
+		cerr << "unable to open file " << filePath << endl;
 		return -1;
-
 	}
 	else {
 		string line;
@@ -202,7 +204,7 @@ void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, 
 	int temp;
 	for(int i=0; i<data.size()-1; i++)
 	{
-		istringstream parser(data.at(i + 1));
+		istringstream parser(data.at(i+1));
 		parser >> temp >> tr.at(i) >> st.at(i) >> qu.at(i) >> pr.at(i) >> trT.at(i) >> fe.at(i);
 	}
 	return;
@@ -224,35 +226,41 @@ int main()
 {
 	//	Get access to the input .tsv file
 	vector<string> data;
-	string filePath = "../in1.tsv";
-	readTSV(filePath, data);
+	string filePath = "./input/in2.tsv";
+	int a = readTSV(filePath, data);
+	if(a == -1)
+    {
+        cerr << "readTSV failed!" << endl;
+        return -1;
+    }
 
 	//	parse data
-	int size = data.size();
-	vector<string> traderID(size - 1, "");
-	vector<string> stockCode(size - 1, "");
-	vector<int> quantity(size - 1, 0);
-	vector<double> price(size -1 , 0.0);
-	vector<string> tradeType(size -1 , "");
-	vector<double> fee(size -1 , 0.0);
+	int size = data.size() - 1;
+	vector<string> traderID(size, "");
+	vector<string> stockCode(size, "");
+	vector<int> quantity(size, 0);
+	vector<double> price(size, 0.0);
+	vector<string> tradeType(size, "");
+	vector<double> fee(size, 0.0);
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
 
 	//	proceed the algorithm
 	map<string, trader*> book;
 	map<string, trader*>::iterator it;
-	for(int i=0; i<size-1; i++)
+	for(int i=0; i<traderID.size(); i++)
 	{
 		string tid = traderID.at(i);
 		it = book.find(tid);
 		if(it != book.end())	//	exsiting
 		{
 			trader* e = it->second;
-			e->updatePositions(tradeEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i) ), fee.at(i) );
+			tradeEntry newEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i));
+			e->updatePositions(newEntry, fee.at(i) );
 		}
-		else {
-			//	insert a new trader if not exsiting
+		else {  //	insert a new trader if not exsiting
 			trader* n = new trader(tid);
-			n->updatePositions(tradeEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i) ), fee.at(i) );
+			tradeEntry newEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i));
+			n->updatePositions(newEntry, fee.at(i) );
 			book.insert(pair<string, trader*>(tid, n) );
 		}
 	}
@@ -268,8 +276,9 @@ int main()
     sort(formatter.rbegin(), formatter.rend()); //  Sort the pair by the first value DESC
 
 	//	output to file
-	string outPath = "../out1.tsv";
+	string outPath = "./output/out2.tsv";
 	write2TSV(formatter, outPath);
+
 	return 0;
 }
 
