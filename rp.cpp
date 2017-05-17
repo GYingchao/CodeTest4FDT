@@ -13,7 +13,6 @@ enum TradeType
 {
 	BUY = -1,
 	SELL = 1,
-	REALIZED = 0
 };
 
 //	Trade Entry definition
@@ -220,14 +219,24 @@ void write2TSV(vector<pair<double, string> > &result, string outPath)
 	fileWriter << (result.at(len) ).second << "\t" << (result.at(len) ).first;
 	fileWriter.close();
 }
+bool comparePairs(const std::pair<double, string>& lhs, const std::pair<double, string>& rhs)
+{
+  return lhs.first > rhs.first;
+}
 
 /*	=====================================	test case	======================================	*/
 int main()
 {
 	//	Get access to the input .tsv file
 	vector<string> data;
-	string filePath = "./input/in2.tsv";
-	int a = readTSV(filePath, data);
+	string inPath = "";
+	cout << "Please type in data file path: " << endl;
+	cin >> inPath;
+	string outPath = "./output/solution0.tsv";
+	//string tem1 = outPath.substr(17, 5);
+	string tem2 = inPath.substr(12, 5);
+	outPath.replace(17, 5, tem2);
+	int a = readTSV(inPath, data);
 	if(a == -1)
     {
         cerr << "readTSV failed!" << endl;
@@ -273,12 +282,11 @@ int main()
         formatter.at(f) = pair<double, string>(it->second->getProfit(), it->first);
         f++;
     }
-    sort(formatter.rbegin(), formatter.rend()); //  Sort the pair by the first value DESC
+    sort(formatter.begin(), formatter.end(), comparePairs); //  Sort the pair by the first value DESC
 
 	//	output to file
-	string outPath = "./output/out2.tsv";
 	write2TSV(formatter, outPath);
-
+    cout << "Solution is stored on " << outPath << endl;
 	return 0;
 }
 
