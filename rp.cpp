@@ -25,7 +25,7 @@ class tradeEntry
 		double price;
 		TradeType tradeType;
 		//double fee;
-		bool realized;
+		//bool realized;
 
 	public:
 		tradeEntry(string st, int qu, double pr, string tt);
@@ -36,7 +36,7 @@ class tradeEntry
 		TradeType getType();
 		//double getFee();
 		bool isRealized();
-		void setRealized(bool r);
+		//void setRealized(bool r);
 };
 
 //	Trader class definition
@@ -59,6 +59,11 @@ tradeEntry::tradeEntry(string st, int qu, double pr, string tt)
 {
 	stockCode = st;
 	quantity = qu;
+	if(quantity <= 0)
+    {
+        cerr << "Error ocurred in instancing tradeEntry ! Quantity is not positive value ! " << endl;
+		return;
+    }
 	price = pr;
 	if(tt == "Buy")
 	{
@@ -68,11 +73,10 @@ tradeEntry::tradeEntry(string st, int qu, double pr, string tt)
 		tradeType = SELL;
 	}
 	else {
-		cerr << "Error ocurred in instancing tradeEntry£ºCannot decide trade type!" << endl;
+		cerr << "Error ocurred in instancing tradeEntry ! Cannot decide trade type!" << endl;
 		return;
 	}
 	//fee = fe;
-	realized = false;
 }
 string tradeEntry::getStockCode()
 {
@@ -84,6 +88,11 @@ int tradeEntry::getQuantity()
 }
 void tradeEntry::setQuantity(int v)
 {
+    if(v < 0)
+    {
+        cerr << "Error ocurred in setQuantity ! Quantity cannot be set negative value !" << endl;
+		return;
+    }
 	quantity = v;
 }
 double tradeEntry::getPrice()
@@ -96,11 +105,12 @@ TradeType tradeEntry::getType()
 }
 bool tradeEntry::isRealized()
 {
-	return realized;
-}
-void tradeEntry::setRealized(bool r)
-{
-	realized = r;
+    if(quantity == 0)
+    {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /*	=============================   Class trader Implementation =====================================	*/
@@ -126,7 +136,8 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 		bool found = false;
 		for(int i=0; i<positions.size(); i++)
 		{
-			if( (positions.at(i) ).getStockCode() == stockCode && ( (positions.at(i) ).getType() * type) == -1) // Search for buy/sell pair
+		    if(positions.at(i).isRealized() ) continue;
+			if( ( (positions.at(i) ).getStockCode() == stockCode) && ( (positions.at(i) ).getType() * type == -1) ) // Search for buy/sell pair
 			{
 				//	buy/sell pair exists, needs to be realized
 				found = true;
@@ -134,22 +145,22 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 				if(resQ > 0)
 				{
 					//	newOrder is wholly realized by entry i
-					(positions.at(i) ).setQuantity(resQ);
 					realizedProfit += newOrder.getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
-					newOrder.setRealized(true);
+					newOrder.setQuantity(0);
+					(positions.at(i) ).setQuantity(resQ);
 					break;	//	No more need to search
 
 				} else if(resQ < 0) {
 					//	entry i is wholly realized by newOrder
-					newOrder.setQuantity(-resQ);
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
-					(positions.at(i) ).setRealized(true);
+					(positions.at(i) ).setQuantity(0);
+					newOrder.setQuantity(-resQ);
 					//  Search more to realize the rest newOrder
 				} else {
 					//  Just equal and balanced
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
- 					(positions.at(i) ).setRealized(true);
-					newOrder.setRealized(true);
+					(positions.at(i) ).setQuantity(0);
+					newOrder.setQuantity(0);
 					break;
 				}
 			}
@@ -159,7 +170,7 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 			positions.push_back(newOrder);
 		} else {
 			//	Update positions for some entry is realized
-			 for(int i=0; i<positions.size(); i++)
+			 for(int i=positions.size()-1; i>=0; i--)
 			{
 				if( positions.at(i).isRealized() )
 				{
