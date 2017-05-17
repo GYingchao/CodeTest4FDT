@@ -126,6 +126,7 @@ trader::trader(string ID)
 void trader::updatePositions(tradeEntry& newOrder, double fee)
 {
 	realizedProfit -= fee;
+cout << realizedProfit << endl;
 	if(positions.empty())   //  Holding no stock
 	{
 		positions.push_back(newOrder);
@@ -146,6 +147,7 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 				{
 					//	newOrder is wholly realized by entry i
 					realizedProfit += newOrder.getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
+cout << realizedProfit << endl;
 					newOrder.setQuantity(0);
 					(positions.at(i) ).setQuantity(resQ);
 					break;	//	No more need to search
@@ -153,12 +155,14 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 				} else if(resQ < 0) {
 					//	entry i is wholly realized by newOrder
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
+cout << realizedProfit << endl;
 					(positions.at(i) ).setQuantity(0);
 					newOrder.setQuantity(-resQ);
 					//  Search more to realize the rest newOrder
 				} else {
 					//  Just equal and balanced
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
+cout << realizedProfit << endl;
 					(positions.at(i) ).setQuantity(0);
 					newOrder.setQuantity(0);
 					break;
