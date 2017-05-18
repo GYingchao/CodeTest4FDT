@@ -16,17 +16,14 @@ enum TradeType
 	SELL = 1,
 };
 
-//	Trade Entry definition
+//	Trade Entry definition, namely every order can be recorded as a tradeEntry
 class tradeEntry
 {
 	private:
-		//string traderID;
 		string stockCode;
 		int quantity;
 		double price;
 		TradeType tradeType;
-		//double fee;
-		//bool realized;
 
 	public:
 		tradeEntry(string st, int qu, double pr, string tt);
@@ -35,12 +32,10 @@ class tradeEntry
 		void setQuantity(int v);
 		double getPrice();
 		TradeType getType();
-		//double getFee();
 		bool isRealized();
-		//void setRealized(bool r);
 };
 
-//	Trader class definition
+//	Trader class definition, which has "on hold" stocks and realized profit
 class trader
 {
 	private:
@@ -50,7 +45,6 @@ class trader
 
 	public:
 		trader(string ID);
-		//~trader();
 		void updatePositions(tradeEntry& newOrder, double fee);
 		double getProfit();
 };
@@ -60,7 +54,7 @@ tradeEntry::tradeEntry(string st, int qu, double pr, string tt)
 {
 	stockCode = st;
 	quantity = qu;
-	if(quantity <= 0)
+	if(quantity <= 0)   //  A new order should have positive quantity number of stocks
     {
         cerr << "Error ocurred in instancing tradeEntry ! Quantity is not positive value ! " << endl;
 		return;
@@ -77,16 +71,18 @@ tradeEntry::tradeEntry(string st, int qu, double pr, string tt)
 		cerr << "Error ocurred in instancing tradeEntry ! Cannot decide trade type ! " << endl;
 		return;
 	}
-	//fee = fe;
 }
+
 string tradeEntry::getStockCode()
 {
 	return stockCode;
 }
+
 int tradeEntry::getQuantity()
 {
 	return quantity;
 }
+
 void tradeEntry::setQuantity(int v)
 {
     if(v < 0)
@@ -96,17 +92,20 @@ void tradeEntry::setQuantity(int v)
     }
 	quantity = v;
 }
+
 double tradeEntry::getPrice()
 {
 	return price;
 }
+
 TradeType tradeEntry::getType()
 {
 	return tradeType;
 }
+
 bool tradeEntry::isRealized()
 {
-    if(quantity == 0)
+    if(quantity == 0)   //  must be realized by some buy/sell entry pair
     {
         return true;
     } else {
@@ -124,15 +123,15 @@ trader::trader(string ID)
 	}
 	realizedProfit = 0.0;
 }
+
 void trader::updatePositions(tradeEntry& newOrder, double fee)
 {
-    uint64_t tick1 = GetTimeMs64();
 	realizedProfit -= fee;
 	if(positions.empty())   //  Holding no stock
 	{
 		positions.push_back(newOrder);
 	}
-	else {  //  Find whether there is a same stock with different tradeType on hold
+	else {  //  Search whether there is a same stock with different tradeType on hold, namely a buy/sell pair
 		string stockCode = newOrder.getStockCode();
 		TradeType type = newOrder.getType();
 		bool found = false;
@@ -141,8 +140,7 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 		    if(positions.at(i).isRealized() ) continue;
 			if( ( (positions.at(i) ).getStockCode() == stockCode) && ( (positions.at(i) ).getType() * type == -1) ) // Search for buy/sell pair
 			{
-				//	buy/sell pair exists, needs to be realized
-				found = true;
+				found = true;   //	buy/sell pair exists
 				int resQ = (positions.at(i) ).getQuantity() - newOrder.getQuantity();   //  Handle quantity
 				if(resQ > 0)
 				{
@@ -163,7 +161,7 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
 					(positions.at(i) ).setQuantity(0);
 					newOrder.setQuantity(0);
-					break;
+					break;  //	No more need to search
 				}
 			}
 		}
@@ -185,8 +183,8 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 			}
 		}
 	}
-	cout << "========== up costs " << GetTimeMs64() - tick1 << " ms." << endl;
 }
+
 double trader::getProfit()
 {
 	return realizedProfit;
@@ -195,7 +193,6 @@ double trader::getProfit()
 /*	=============================	Utilities functions =====================================	*/
 int readTSV(string filePath, vector<string> &data)
 {
-    //uint64_t tick1 = GetTimeMs64();
 	ifstream fileReader(filePath);
 	if (!fileReader.is_open())
 	{
@@ -210,12 +207,11 @@ int readTSV(string filePath, vector<string> &data)
 		}
 	}
 	fileReader.close();
-	//cout << "========== readTSV in "<< filePath << " costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	return 0;
 }
+
 void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, vector<int> &qu, vector<double> &pr, vector<string> &trT, vector<double> &fe)
 {
-    //uint64_t tick1 = GetTimeMs64();
 	//	Handle tab separated string line by line
 	int temp;
 	for(int i=0; i<data.size()-1; i++)
@@ -223,12 +219,11 @@ void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, 
 		istringstream parser(data.at(i+1));
 		parser >> temp >> tr.at(i) >> st.at(i) >> qu.at(i) >> pr.at(i) >> trT.at(i) >> fe.at(i);
 	}
-	//cout << "========== parseTSVLine costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	return;
 }
+
 void write2TSV(vector<pair<double, string> > &result, string outPath)
 {
-    //uint64_t tick1 = GetTimeMs64();
 	ofstream fileWriter(outPath);
 	int len = result.size() - 1;
 	for(int p=0; p<len; p++)
@@ -237,9 +232,9 @@ void write2TSV(vector<pair<double, string> > &result, string outPath)
 	}
 	fileWriter << (result.at(len) ).second << "\t" << (result.at(len) ).first;
 	fileWriter.close();
-	//cout << "========== write2TSV costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	return;
 }
+
 bool comparePairs(const std::pair<double, string>& lhs, const std::pair<double, string>& rhs)
 {
   return lhs.first > rhs.first;
@@ -254,11 +249,10 @@ int main()
 	cout << "Please type in data file path: " << endl;
 	cin >> inPath;
 	string outPath = "./output/solution0.tsv";
-	//string tem1 = outPath.substr(17, 5);
-	string tem2 = inPath.substr(12, 5);
-	outPath.replace(17, 5, tem2);
-	int a = readTSV(inPath, data);
-	if(a == -1)
+	string tem = inPath.substr(12, 5);
+	outPath.replace(17, 5, tem);
+	int load = readTSV(inPath, data);
+	if(load == -1)
     {
         cerr << "readTSV failed!" << endl;
         return -1;
@@ -272,18 +266,17 @@ int main()
 	vector<double> price(size, 0.0);
 	vector<string> tradeType(size, "");
 	vector<double> fee(size, 0.0);
-	//cout << "========== allocate vectors costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
 
 	uint64_t tick1 = GetTimeMs64();
 	//	proceed the algorithm
 	map<string, trader*> book;
 	map<string, trader*>::iterator it;
-	for(int i=0; i<traderID.size(); i++)
+	for(int i=0; i<traderID.size(); i++)    //  maintain a hash table for quick find
 	{
 		string tid = traderID.at(i);
 		it = book.find(tid);
-		if(it != book.end())	//	exsiting
+		if(it != book.end())	//	exsiting trader, then update its positions
 		{
 			trader* e = it->second;
 			tradeEntry newEntry(stockCode.at(i), quantity.at(i), price.at(i), tradeType.at(i));
@@ -298,7 +291,7 @@ int main()
 	}
 
 	//  Sorting by trader's realized profit
-    vector<pair<double, string> >  formatter(book.size());      //  Restore to vector
+    vector<pair<double, string> >  formatter(book.size());      //  Restore the table to vector
     int f = 0;
     for(map<string, trader*>::iterator it = book.begin(); it != book.end(); ++it)
     {
