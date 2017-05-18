@@ -127,7 +127,6 @@ trader::trader(string ID)
 void trader::updatePositions(tradeEntry& newOrder, double fee)
 {
 	realizedProfit -= fee;
-cout << realizedProfit << endl;
 	if(positions.empty())   //  Holding no stock
 	{
 		positions.push_back(newOrder);
@@ -148,7 +147,6 @@ cout << realizedProfit << endl;
 				{
 					//	newOrder is wholly realized by entry i
 					realizedProfit += newOrder.getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
-cout << realizedProfit << endl;
 					newOrder.setQuantity(0);
 					(positions.at(i) ).setQuantity(resQ);
 					break;	//	No more need to search
@@ -156,14 +154,12 @@ cout << realizedProfit << endl;
 				} else if(resQ < 0) {
 					//	entry i is wholly realized by newOrder
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
-cout << realizedProfit << endl;
 					(positions.at(i) ).setQuantity(0);
 					newOrder.setQuantity(-resQ);
 					//  Search more to realize the rest newOrder
 				} else {
 					//  Just equal and balanced
 					realizedProfit += (positions.at(i) ).getQuantity() * (newOrder.getType()*newOrder.getPrice() + (positions.at(i) ).getType()* (positions.at(i) ).getPrice() );
-cout << realizedProfit << endl;
 					(positions.at(i) ).setQuantity(0);
 					newOrder.setQuantity(0);
 					break;
@@ -197,7 +193,7 @@ double trader::getProfit()
 /*	=============================	Utilities functions =====================================	*/
 int readTSV(string filePath, vector<string> &data)
 {
-    uint64_t tick1 = GetTimeMs64();
+    //uint64_t tick1 = GetTimeMs64();
 	ifstream fileReader(filePath);
 	if (!fileReader.is_open())
 	{
@@ -212,12 +208,12 @@ int readTSV(string filePath, vector<string> &data)
 		}
 	}
 	fileReader.close();
-	cout << "========== readTSV in "<< filePath << " costs " << GetTimeMs64() - tick1 << " ms." << endl;
+	//cout << "========== readTSV in "<< filePath << " costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	return 0;
 }
 void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, vector<int> &qu, vector<double> &pr, vector<string> &trT, vector<double> &fe)
 {
-    uint64_t tick1 = GetTimeMs64();
+    //uint64_t tick1 = GetTimeMs64();
 	//	Handle tab separated string line by line
 	int temp;
 	for(int i=0; i<data.size()-1; i++)
@@ -225,12 +221,12 @@ void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, 
 		istringstream parser(data.at(i+1));
 		parser >> temp >> tr.at(i) >> st.at(i) >> qu.at(i) >> pr.at(i) >> trT.at(i) >> fe.at(i);
 	}
-	cout << "========== parseTSVLine costs " << GetTimeMs64() - tick1 << " ms." << endl;
+	//cout << "========== parseTSVLine costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	return;
 }
 void write2TSV(vector<pair<double, string> > &result, string outPath)
 {
-    uint64_t tick1 = GetTimeMs64();
+    //uint64_t tick1 = GetTimeMs64();
 	ofstream fileWriter(outPath);
 	int len = result.size() - 1;
 	for(int p=0; p<len; p++)
@@ -239,7 +235,7 @@ void write2TSV(vector<pair<double, string> > &result, string outPath)
 	}
 	fileWriter << (result.at(len) ).second << "\t" << (result.at(len) ).first;
 	fileWriter.close();
-	cout << "========== write2TSV costs " << GetTimeMs64() - tick1 << " ms." << endl;
+	//cout << "========== write2TSV costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	return;
 }
 bool comparePairs(const std::pair<double, string>& lhs, const std::pair<double, string>& rhs)
@@ -266,7 +262,6 @@ int main()
         return -1;
     }
 
-	uint64_t tick1 = GetTimeMs64();
 	//	parse data
 	int size = data.size() - 1;
 	vector<string> traderID(size, "");
@@ -275,9 +270,10 @@ int main()
 	vector<double> price(size, 0.0);
 	vector<string> tradeType(size, "");
 	vector<double> fee(size, 0.0);
-	cout << "========== allocate vectors costs " << GetTimeMs64() - tick1 << " ms." << endl;
+	//cout << "========== allocate vectors costs " << GetTimeMs64() - tick1 << " ms." << endl;
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
 
+	uint64_t tick1 = GetTimeMs64();
 	//	proceed the algorithm
 	map<string, trader*> book;
 	map<string, trader*>::iterator it;
