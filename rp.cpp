@@ -126,6 +126,7 @@ trader::trader(string ID)
 }
 void trader::updatePositions(tradeEntry& newOrder, double fee)
 {
+    uint64_t tick1 = GetTimeMs64();
 	realizedProfit -= fee;
 	if(positions.empty())   //  Holding no stock
 	{
@@ -184,6 +185,7 @@ void trader::updatePositions(tradeEntry& newOrder, double fee)
 			}
 		}
 	}
+	cout << "========== up costs " << GetTimeMs64() - tick1 << " ms." << endl;
 }
 double trader::getProfit()
 {
