@@ -5,8 +5,8 @@
 #include<vector>
 #include<map>
 #include<algorithm>
-#include "time.h"
-#include "memory.h"
+//#include "time.h"
+//#include "memory.h"
 
 using namespace std;
 
@@ -46,6 +46,7 @@ class trader
 
 	public:
 		trader(string ID);
+		//  Key function in this program, which contains realized profit computing and maintaining the intermediate orders of the trader.
 		void updatePositions(tradeEntry& newOrder, double fee);
 		double getProfit();
 };
@@ -192,7 +193,7 @@ double trader::getProfit()
 }
 
 /*	=============================	Utilities functions =====================================	*/
-int readTSV(string filePath, vector<string> &data)
+int readTSV(string filePath, vector<string> &data)  //  read data from filePath and store data in a string vector
 {
 	ifstream fileReader(filePath);
 	if (!fileReader.is_open())
@@ -211,6 +212,7 @@ int readTSV(string filePath, vector<string> &data)
 	return 0;
 }
 
+//  Parse the string data to their appropriate type, restore them into vectors
 void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, vector<int> &qu, vector<double> &pr, vector<string> &trT, vector<double> &fe)
 {
 	//	Handle tab separated string line by line
@@ -223,6 +225,7 @@ void parseTSVLine(vector<string> &data, vector<string> &tr, vector<string> &st, 
 	return;
 }
 
+//  Write the result into tsv file according to the outPath.
 void write2TSV(vector<pair<double, string> > &result, string outPath)
 {
 	ofstream fileWriter(outPath);
@@ -236,6 +239,7 @@ void write2TSV(vector<pair<double, string> > &result, string outPath)
 	return;
 }
 
+//  Used by sorting pairs
 bool comparePairs(const std::pair<double, string>& lhs, const std::pair<double, string>& rhs)
 {
   return lhs.first > rhs.first;
@@ -269,9 +273,9 @@ int main()
 	vector<double> fee(size, 0.0);
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
 
-	uint64_t tick1 = GetTimeMs64(); //  for counting time
-	memoryInWin mInW;   //  for counting memory
-	mInW.init();
+	//uint64_t tick1 = GetTimeMs64(); //  for counting time
+	//memoryInWin mInW;   //  for counting memory
+	//mInW.init();
 	//	proceed the algorithm
 	map<string, trader*> book;
 	map<string, trader*>::iterator it;
@@ -304,9 +308,9 @@ int main()
         delete tem;
     }
     sort(formatter.begin(), formatter.end(), comparePairs); //  Sort the pair by the first value DESC
-    cout << "========== main algorithm costs " << GetTimeMs64() - tick1 << " ms." << endl;
-    cout << "========== current used VM by current process: " << mInW.getCurrentUsedVMbyMe() << "MB." << endl;
-    cout << "========== current used PhM by current process: " << mInW.getCurrentUsedPhMbyMe() << "MB." << endl;
+    //cout << "========== main algorithm costs " << GetTimeMs64() - tick1 << " ms." << endl;
+    //cout << "========== current used VM by current process: " << mInW.getCurrentUsedVMbyMe() << "MB." << endl;
+    //cout << "========== current used PhM by current process: " << mInW.getCurrentUsedPhMbyMe() << "MB." << endl;
 
 	//	output to file
 	write2TSV(formatter, outPath);
