@@ -5,7 +5,8 @@
 #include<vector>
 #include<map>
 #include<algorithm>
-#include "rp.h"
+#include "time.h"
+#include "memory.h"
 
 using namespace std;
 
@@ -268,7 +269,9 @@ int main()
 	vector<double> fee(size, 0.0);
 	parseTSVLine(data, traderID, stockCode, quantity, price, tradeType, fee);
 
-	uint64_t tick1 = GetTimeMs64();
+	uint64_t tick1 = GetTimeMs64(); //  for counting time
+	memoryInWin mInW;   //  for counting memory
+	mInW.init();
 	//	proceed the algorithm
 	map<string, trader*> book;
 	map<string, trader*>::iterator it;
@@ -295,11 +298,15 @@ int main()
     int f = 0;
     for(map<string, trader*>::iterator it = book.begin(); it != book.end(); ++it)
     {
-        formatter.at(f) = pair<double, string>(it->second->getProfit(), it->first);
+        trader* tem = it->second;
+        formatter.at(f) = pair<double, string>(tem->getProfit(), it->first);
         f++;
+        delete tem;
     }
     sort(formatter.begin(), formatter.end(), comparePairs); //  Sort the pair by the first value DESC
     cout << "========== main algorithm costs " << GetTimeMs64() - tick1 << " ms." << endl;
+    cout << "========== current used VM by current process: " << mInW.getCurrentUsedVMbyMe() << "MB." << endl;
+    cout << "========== current used PhM by current process: " << mInW.getCurrentUsedPhMbyMe() << "MB." << endl;
 
 	//	output to file
 	write2TSV(formatter, outPath);
